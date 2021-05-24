@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ui_design/component/fadeAnimation.dart';
@@ -6,6 +9,7 @@ import 'package:ui_design/component/productCard.dart';
 import 'package:ui_design/detailShoes.dart';
 import 'package:ui_design/model/shoesImages.dart';
 import 'package:ui_design/model/shoesModel.dart';
+import 'package:vector_math/vector_math.dart' as vector;
 
 List setName=["Nike Air Max"];
 List setPrice=[135];
@@ -77,8 +81,9 @@ class Discover extends StatefulWidget {
   @override
   _DiscoverState createState() => _DiscoverState();
 }
-
 class _DiscoverState extends State<Discover> {
+  final _pageController = PageController(viewportFraction: 0.8);
+  // double value =1.0;
   List<ShoeModel> products = ShoeModel.list;
   List<ShoesImages> productImg = ShoesImages.imgPaths;
   String name="";
@@ -86,12 +91,24 @@ class _DiscoverState extends State<Discover> {
   int price=0;
   int id=0;
   int quantity=0;
+  // void _listenScroll(){
+  //   setState(() {
+  //     value=_pageController.page;
+  //   });
+  // }
+
   @override
   void initState() {
-
+    // _pageController.addListener(_listenScroll);
     _loadData();
     super.initState();
   }
+  // @override
+  // void dispose(){
+  //   _pageController.removeListener(_listenScroll);
+  //   _pageController.dispose();
+  //   super.dispose();
+  // }
   _loadData() async{
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -186,7 +203,7 @@ class _DiscoverState extends State<Discover> {
                               child: Text(
                                 "Addidas",
                                 style:
-                                    TextStyle(fontSize: 17, color: Colors.grey),
+                                TextStyle(fontSize: 17, color: Colors.grey),
                               ),
                             ),
                           )),
@@ -201,7 +218,7 @@ class _DiscoverState extends State<Discover> {
                               child: Text(
                                 "Jordon",
                                 style:
-                                    TextStyle(fontSize: 17, color: Colors.grey),
+                                TextStyle(fontSize: 17, color: Colors.grey),
                               ),
                             ),
                           )),
@@ -216,7 +233,7 @@ class _DiscoverState extends State<Discover> {
                               child: Text(
                                 "Puma",
                                 style:
-                                    TextStyle(fontSize: 17, color: Colors.grey),
+                                TextStyle(fontSize: 17, color: Colors.grey),
                               ),
                             ),
                           )),
@@ -231,7 +248,7 @@ class _DiscoverState extends State<Discover> {
                               child: Text(
                                 "Reebok",
                                 style:
-                                    TextStyle(fontSize: 17, color: Colors.grey),
+                                TextStyle(fontSize: 17, color: Colors.grey),
                               ),
                             ),
                           )),
@@ -243,32 +260,74 @@ class _DiscoverState extends State<Discover> {
               SizedBox(
                 height: ScreenUtil().setHeight(650),
                 //700
-                child: ListView.builder(
+                child: PageView.builder(
+                  controller: _pageController,
                     scrollDirection: Axis.horizontal,
-                    physics: BouncingScrollPhysics(),
                     itemCount: products.length,
                     itemBuilder: (context, index) {
                       ShoeModel shoes = products[index];
                       ShoesImages images = productImg[index];
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => DetailPage(
-                                  shoeModel: products[index],
-                                  shoesImages: productImg[index]),
+                      return AnimatedBuilder(
+                        animation:_pageController ,
+                        builder: (context,child){
+                          double _lowerLimit;
+                          double _upperLimit;
+                          double value=1.0;
+                          if(_pageController.position.haveDimensions){
+                            value=_pageController.page -index;
+                            if(value>0) {
+                              _lowerLimit = 0;
+                              _upperLimit = pi / 2;
+                              value = (_upperLimit - (value.abs() * (_upperLimit - _lowerLimit)))
+                                  .clamp(_lowerLimit, _upperLimit);
+                              value = _upperLimit - value;
+                              value *= -1;
+                            }
+                            else if(value < 0){
+                              _lowerLimit =- pi/2;
+                              _upperLimit=0;
+                              value = (_upperLimit - (value.abs() * (_upperLimit - _lowerLimit)))
+                                  .clamp(_lowerLimit, _upperLimit);
+                              value = _upperLimit - value;
+                              value *= 1;
+                            }
+                          }
+                          else{
+                            if (index == 0) {
+                              value = 0;
+                            } else if (index == 1) {
+                              value = -1;
+                            }
+                          }
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => DetailPage(
+                                      shoeModel: products[index],
+                                      shoesImages: productImg[index]),
+                                ),
+                              );
+                            },
+                            child: Transform(
+                              transform: Matrix4.identity()
+                                ..setEntry(3, 2, 0.001)
+                                ..rotateY(value),
+                              child: child,
                             ),
                           );
                         },
                         child: Padding(
-                          padding: EdgeInsets.only(
+                          padding:EdgeInsets.only(
                             left: ScreenUtil().setWidth(40),
                           ),
                           child: ProductCard(
                               shoes: shoes, cardNum: index, img: images),
                         ),
                       );
-                    }),
+                    }
+
+                ),
               ),
               SizedBox(
                 height: ScreenUtil().setHeight(10),
@@ -312,6 +371,69 @@ class _DiscoverState extends State<Discover> {
       ),
     );
   }
+  _builder(int index){
+    ShoeModel shoes = products[index];
+    ShoesImages images = productImg[index];
+    return AnimatedBuilder(
+        animation:_pageController ,
+        builder: (context,child){
+          double _lowerLimit;
+          double _upperLimit;
+          double value=1.0;
+          if(_pageController.position.haveDimensions){
+            value=_pageController.page -index;
+            print(value);
+            if(value>0) {
+              _lowerLimit = 0;
+              _upperLimit = pi / 2;
+              value = (_upperLimit - (value.abs() * (_upperLimit - _lowerLimit)))
+                  .clamp(_lowerLimit, _upperLimit);
+              value = _upperLimit - value;
+              value *= -1;
+            }
+            else if(value < 0){
+              _lowerLimit =- pi/2;
+              _upperLimit=0;
+              value = (_upperLimit - (value.abs() * (_upperLimit - _lowerLimit)))
+                  .clamp(_lowerLimit, _upperLimit);
+              value = _upperLimit - value;
+              value *= 1;
+            }
+          }
+          else{
+            if (index == 0) {
+              value = 0;
+            } else if (index == 1) {
+              value = -1;
+            }
+          }
+          return GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => DetailPage(
+                      shoeModel: products[index],
+                      shoesImages: productImg[index]),
+                ),
+              );
+            },
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: ScreenUtil().setWidth(40),
+              ),
+              child: Transform(
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.001)
+                  ..rotateY(value),
+                child: child,
+              ),
+            ),
+          );
+        },
+        child: ProductCard(
+            shoes: shoes, cardNum: index, img: images),
+        );
+  }
 }
 
 Container nowTrending(String img, String price, String name) {
@@ -343,8 +465,8 @@ Container nowTrending(String img, String price, String name) {
               width: ScreenUtil().setWidth(500),
               decoration: BoxDecoration(
                   image: DecorationImage(
-                image: AssetImage('assets/$img.png'),
-              )),
+                    image: AssetImage('assets/$img.png'),
+                  )),
             ),
             Center(
               child: Text(
@@ -380,15 +502,328 @@ Container nowTrending(String img, String price, String name) {
                 quarterTurns: 3,
                 child: Center(
                     child: Text(
-                  "NEW",
-                  style: TextStyle(color: Colors.white, letterSpacing: 2.0),
-                ))),
+                      "NEW",
+                      style: TextStyle(color: Colors.white, letterSpacing: 2.0),
+                    ))),
           ),
         )
       ],
     ),
   );
 }
+
+// class _DiscoverState extends State<Discover> {
+//
+//   List<ShoeModel> products = ShoeModel.list;
+//   List<ShoesImages> productImg = ShoesImages.imgPaths;
+//   String name="";
+//   String imageName="";
+//   int price=0;
+//   int id=0;
+//   int quantity=0;
+//   @override
+//   void initState() {
+//
+//     _loadData();
+//     super.initState();
+//   }
+//   _loadData() async{
+//     SharedPreferences prefs = await SharedPreferences.getInstance();
+//     setState(() {
+//       id=(prefs.getInt("Id")?? 0);
+//       quantity=(prefs.getInt("Qun")?? 0);
+//       name=(prefs.getString('Name') ?? "");
+//       price=(prefs.getInt('price') ?? 0);
+//       // priceFinal=double.parse(price.toString());
+//       imageName=(prefs.getString('img') ?? "");
+//       if(!setId.contains(id) && id !=0){
+//         setId.add(id);
+//         setName.add(name);
+//         setPrice.add(price);
+//         setImage.add(imageName);
+//         setQuantity.add(quantity);
+//       }
+//       prefs.remove("Name");
+//       prefs.remove("price");
+//       prefs.remove("img");
+//       prefs.remove("Id");
+//       prefs.remove("Qun");
+//     });
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         elevation: 0,
+//         backgroundColor: Colors.transparent,
+//         leading: null,
+//         title: Text(
+//           "Discover",
+//           style: TextStyle(
+//               color: Colors.black, fontSize: ScreenUtil().setSp(50), fontWeight: FontWeight.bold),
+//         ),
+//         brightness: Brightness.light,
+//         actions: <Widget>[
+//           IconButton(
+//             icon: Icon(
+//               Icons.search,
+//               color: Colors.black,
+//             ),
+//             onPressed: () {},
+//           ),
+//           IconButton(
+//             icon: Icon(
+//               Icons.notifications_none_outlined,
+//               color: Colors.black,
+//             ),
+//             onPressed: () {},
+//           )
+//         ],
+//       ),
+//       body: SingleChildScrollView(
+//         child: Container(
+//           padding: EdgeInsets.only(left:ScreenUtil().setWidth(40),top:ScreenUtil().setHeight(40),right:ScreenUtil().setWidth(40),bottom:ScreenUtil().setHeight(40)),
+//           child: Column(
+//             children: [
+//               Container(
+//                 height: ScreenUtil().setHeight(80),
+//                 child: ListView(
+//                   scrollDirection: Axis.horizontal,
+//                   children: <Widget>[
+//                     AspectRatio(
+//                       aspectRatio: 2.2 / 1,
+//                       child: FadeAnimation(
+//                           1,
+//                           Container(
+//                             margin: EdgeInsets.only(right: 10),
+//                             decoration: BoxDecoration(
+//                                 color: Colors.grey[200],
+//                                 borderRadius: BorderRadius.circular(20)),
+//                             child: Center(
+//                               child: Text(
+//                                 "Nike",
+//                                 style: TextStyle(
+//                                     fontSize: 20,
+//                                     color: Colors.black,
+//                                     fontWeight: FontWeight.bold),
+//                               ),
+//                             ),
+//                           )),
+//                     ),
+//                     AspectRatio(
+//                       aspectRatio: 2.2 / 1,
+//                       child: FadeAnimation(
+//                           1.1,
+//                           Container(
+//                             margin: EdgeInsets.only(right: 10),
+//                             child: Center(
+//                               child: Text(
+//                                 "Addidas",
+//                                 style:
+//                                     TextStyle(fontSize: 17, color: Colors.grey),
+//                               ),
+//                             ),
+//                           )),
+//                     ),
+//                     AspectRatio(
+//                       aspectRatio: 2.2 / 1,
+//                       child: FadeAnimation(
+//                           1.2,
+//                           Container(
+//                             margin: EdgeInsets.only(right: 10),
+//                             child: Center(
+//                               child: Text(
+//                                 "Jordon",
+//                                 style:
+//                                     TextStyle(fontSize: 17, color: Colors.grey),
+//                               ),
+//                             ),
+//                           )),
+//                     ),
+//                     AspectRatio(
+//                       aspectRatio: 2.2 / 1,
+//                       child: FadeAnimation(
+//                           1.3,
+//                           Container(
+//                             margin: EdgeInsets.only(right: 10),
+//                             child: Center(
+//                               child: Text(
+//                                 "Puma",
+//                                 style:
+//                                     TextStyle(fontSize: 17, color: Colors.grey),
+//                               ),
+//                             ),
+//                           )),
+//                     ),
+//                     AspectRatio(
+//                       aspectRatio: 2.2 / 1,
+//                       child: FadeAnimation(
+//                           1.4,
+//                           Container(
+//                             margin: EdgeInsets.only(right: 10),
+//                             child: Center(
+//                               child: Text(
+//                                 "Reebok",
+//                                 style:
+//                                     TextStyle(fontSize: 17, color: Colors.grey),
+//                               ),
+//                             ),
+//                           )),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//               SizedBox(height: ScreenUtil().setHeight(35)),
+//               SizedBox(
+//                 height: ScreenUtil().setHeight(650),
+//                 //700
+//                 child: ListView.builder(
+//                     scrollDirection: Axis.horizontal,
+//                     physics: BouncingScrollPhysics(),
+//                     itemCount: products.length,
+//                     itemBuilder: (context, index) {
+//                       ShoeModel shoes = products[index];
+//                       ShoesImages images = productImg[index];
+//                       return GestureDetector(
+//                         onTap: () {
+//                           Navigator.of(context).push(
+//                             MaterialPageRoute(
+//                               builder: (_) => DetailPage(
+//                                   shoeModel: products[index],
+//                                   shoesImages: productImg[index]),
+//                             ),
+//                           );
+//                         },
+//                         child: Padding(
+//                           padding: EdgeInsets.only(
+//                             left: ScreenUtil().setWidth(40),
+//                           ),
+//                           child: ProductCard(
+//                               shoes: shoes, cardNum: index, img: images),
+//                         ),
+//                       );
+//                     }),
+//               ),
+//               SizedBox(
+//                 height: ScreenUtil().setHeight(10),
+//               ),
+//               Row(
+//                 children: [
+//                   Text(
+//                     'More',
+//                     style: TextStyle(fontSize: ScreenUtil().setSp(40), fontWeight: FontWeight.bold),
+//                   ),
+//                   SizedBox(
+//                     width: ScreenUtil().setWidth(480),
+//                   ),
+//                   Icon(
+//                     Icons.arrow_forward,
+//                     color: Colors.black,
+//                     size: 30.0,
+//                   )
+//                 ],
+//               ),
+//               SizedBox(
+//                 height: ScreenUtil().setHeight(20),
+//               ),
+//               SizedBox(
+//                 height: ScreenUtil().setHeight(520),
+//                 child: Container(
+//                   height: ScreenUtil().setHeight(480),
+//                   child: ListView(
+//                     scrollDirection: Axis.horizontal,
+//                     children: <Widget>[
+//                       nowTrending('shoes2', '110', 'Nike air max '),
+//                       nowTrending('shoes4', '120', 'Nike  max 97'),
+//                       nowTrending('shoes3', '120', 'Nike  force 97'),
+//                     ],
+//                   ),
+//                 ),
+//               )
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+//
+// Container nowTrending(String img, String price, String name) {
+//   return Container(
+//     width: ScreenUtil().setWidth(400),
+//     margin: EdgeInsets.only(right: 15),
+//     decoration: BoxDecoration(
+//         borderRadius: BorderRadius.all(Radius.circular(20)),
+//         color: Colors.white),
+//     child: Stack(
+//       children: [
+//         Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: <Widget>[
+//             Row(
+//               mainAxisAlignment: MainAxisAlignment.end,
+//               children: [
+//                 IconButton(
+//                   onPressed: (){},
+//                   icon: Icon(
+//                     Icons.favorite_border,
+//                     color: Colors.black,
+//                   ),
+//                 )
+//               ],
+//             ),
+//             Container(
+//               height: ScreenUtil().setHeight(270),
+//               width: ScreenUtil().setWidth(500),
+//               decoration: BoxDecoration(
+//                   image: DecorationImage(
+//                 image: AssetImage('assets/$img.png'),
+//               )),
+//             ),
+//             Center(
+//               child: Text(
+//                 '$name',
+//                 style: TextStyle(fontSize: ScreenUtil().setSp(40)),
+//               ),
+//             ),
+//             SizedBox(
+//               height: ScreenUtil().setHeight(5),
+//             ),
+//             Center(
+//               child: Text(
+//                 '\$$price',
+//                 style: TextStyle(fontSize: ScreenUtil().setSp(40), color: Colors.black),
+//               ),
+//             ),
+//           ],
+//         ),
+//         Positioned(
+//           top: 10,
+//           left: 10,
+//           bottom: 150,
+//           child: Container(
+//             padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+//             decoration: BoxDecoration(
+//               color: Colors.redAccent,
+//               // borderRadius: BorderRadius.only(
+//               //   topLeft: Radius.circular(8),
+//               //   bottomRight: Radius.circular(8),
+//               // )
+//             ),
+//             child: RotatedBox(
+//                 quarterTurns: 3,
+//                 child: Center(
+//                     child: Text(
+//                   "NEW",
+//                   style: TextStyle(color: Colors.white, letterSpacing: 2.0),
+//                 ))),
+//           ),
+//         )
+//       ],
+//     ),
+//   );
+// }
 //-----------------------------------------------------
 
 //-------------------Add To Bag------------------------
@@ -640,7 +1075,7 @@ class _AddToBagState extends State<AddToBag> {
                                         setQuantity[index]++;
                                         total=total+setPrice[index];
                                         itemTotal=itemTotal+1;
-                                        print(setQuantity);
+
                                       });
                                     },
                                     color: Colors.black,)
